@@ -26,12 +26,12 @@ binop = ['+','-','*','/','^','%','..','<','<=','>','>=','==','~=','and','or']   
 unop = ['-','not','#']                                                                                                                          #These are everything that come under the Unop rule
 
 Name =  re.compile("^[_a-zA-Z]\w*$")
-Num = re.compile('^[0-9]+$')                                                    #Matches any number. I should have modified this to recognise numbers with decimal places and numbers in standard form but I didn't think about that until just now
+Num = re.compile('^[0-9]+$')                                                    #Matches any number. 
 String = re.compile("['\"]([^\"]*)['\"]")                                       #This essentially just matches anything between quotation marks, perfect for getting strings
 
 start = 0
 
-def StT(i):                         #This method is used to convert raw shlex tokens into tokens which are useful to my parser.
+def StT(i):                         #This method is used to convert raw shlex tokens into their respective terminal in the grammar (see grammar.pdf)
 
 
     global endCount                 #Keeps track of amount of "ends" in the program, even if our errorRecovery method misses one it will still tell the user theres one missing
@@ -60,7 +60,7 @@ def StT(i):                         #This method is used to convert raw shlex to
                 if (TempTokens[i+1] == '.'):
                     del TempTokens[i+1]
                     return 'BINOP'
-    if cToken == '-':                                   #This could be binop or unop, we don't know, so my rules check for (binop|'-') and (unop|'-') instead of binop and unop.
+    if cToken == '-':                                   #This could be binop or unop, we don't know, so my rules check for (binop|'-') and (unop|'-') instead of binop and unop, which saves time backtracking.
         return '-'
     if cToken == 'EOF':
         return 'EOF'
@@ -117,12 +117,12 @@ def check(cToken):      #This function is used when the program MUST have a term
 
         return False
 
-def currentIs(cToken):                  #Just returns if the current token is the one we're looking for.
+def currentIs(cToken):                  #Just returns if the current token is the one we're looking for without consuming it.
     if (cToken == token):
         return True
     return False
 
-def getToken():                 #Gets a new token
+def getToken():                 #Moves to the next token
     global token
     global counter
     if counter>=len(Tokens):
@@ -289,7 +289,7 @@ def varlist():
     if found(','):                #If we find ',' there is another variable so run varlist again
         varlist()
 
-def namelist(X):
+def namelist(X):				#We use the variable X to tell our namelist function if we are checking the parameters of a function (so we can save them)
     print "Namelist"
     if currentIs('ERROR'):
         return False
@@ -344,7 +344,7 @@ def function():
     check(FUNCTION)
     funcbody(0)
 
-def funcbody(X):
+def funcbody(X):				#We use the parameter X to signal if we are defining a function (X = 1) or calling a function (X = 0)
     if currentIs('ERROR'):
         return False
     print 'Funcbody'
@@ -588,8 +588,7 @@ def errorRecovery():                            #My errorRecovery function wasn'
         if ((token == DO)|(token == WHILE)|(token == REPEAT)|(token == IF)|(token == FOR)|(token == FUNCTION)|(token == LOCAL)):                #We can easily tell we have a statement due to the terminals only found at the beginning of statements
             block()
         elif (token == 'NAME'):                                                                             #We might have the start of a new statement but we also might be in the middle of a varlist or parlist and we'll end up generating
-            tempCounter = counter                                                                           #loads of errors that shouldn't really be there if we do this. Unfortunately we might miss out on a legitmately incorrect statement
-            varlist()                                                                                       #if it happens to follow right after another one.
+            tempCounter = counter                                                                           #loads of errors that shouldn't really be there if we do this. Eventually however we will get to the beginning of another statement.
             check('=')
             explist()
             if(error == 1):
@@ -641,7 +640,7 @@ if __name__ == "__main__":
     import sys
     parse(sys.argv[1])
 
-if (error == 0):        #No errors found, the program parses, if there are any functions print then
+if (error == 0):        #No errors found, the program parses, if there are any functions print them.
     print ""
     print "No errors found"
     if (functionNo > -1):
