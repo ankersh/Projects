@@ -1,0 +1,43 @@
+1) MLP, Tune using cross CV
+2) CNN, Tune using cross CV
+3) 3 different feature engineering techniques
+4) MLP using engineered features, Tune using cross CV
+5) Report
+
+THEANO NOT TENSORFLOW!!
+
+Monday TODO:
+  Basic CNN
+  Improved CNN
+  Get MLP to output a properly formatted CSV
+  Same for CNN
+
+
+
+TODO:
+
+  Get MLP to produce some sort of reasonable prediction, formatted correctly
+  Get CNN to produce correctly formatted prediction
+
+  Change copied code:
+    Getting images from folders
+    labels
+    convertedarray
+    log_loss
+
+  For HOG:
+    Mess about with cell size, with reasoning
+    Mess about with block size, with reasoning
+
+    Get Hog.py to output useful predictions we can check against on a split training data.
+    We need:
+      Vanilla HOG                                         :
+      HOG with modified cell size 1                       :
+      HOG with modified cell size 2                       :
+      HOG with modified block size & cell size 1          :
+      HOG with modified block size & cell size 2          :
+      HOG with modified block size & cell size 3          :
+      HOG with best modified cell size & block size.      :
+
+
+      rawimage = rawimage.flatten()

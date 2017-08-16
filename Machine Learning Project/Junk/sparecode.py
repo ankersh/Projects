@@ -1,0 +1,17 @@
+Epoch 15/15
+822/822 [==============================] - 26s - loss: 1.2030
+549/549 [==============================] - 6s
+Validation Log Loss: 1.09980433747
+
+
+CNN PROGRESSION:
+
+FIRSTCNN.PY:    10.3881425004
+SECONDCNN.PY:   8.49345221034
+THIRDCNN.PY:    4.07944154739
+FOURTHCNN.PY:   1.25777506647
+
+
+BASIC MLP:
+                ALB	            BET	            DOL	            LAG	            NoF	            OTHER	        SHARK	        YFT
+TWO LAYERS PROB: 0.1679621962	0.1141657247	0.1222203787	0.1206376095	0.1389992743	0.1065825642	0.1032288335	0.1262034188

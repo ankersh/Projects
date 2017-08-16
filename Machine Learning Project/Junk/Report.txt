@@ -1,0 +1,104 @@
+Originally I tried to just run the MLPClassifier with no additional layers after resizing the image to 64*64
+pixels
+Clearly this failed, infact it just predicted everything as being ALB.
+
+So I decided my first modifcation should be to increase the number of hidden layers. I decided as my i
+mages were 64*64, I'd use 4096 nodes and a single layer to start with.
+This performed SLIGHTLY better, it now picked from 4 different labels (ALB, OTHER, NOF and YFT),
+with the huge majority still being ALB. I can only assume this is because these were the 4 most numerous samples in the training data, and
+therefore because the squashed images looked so much alike it was just picking due to the number
+of times it'd seen them in the training data.
+
+
+
+I then thought that preserving the aspect ratio would probably help, I changed the image size to 96*54.
+This got more promising results. Whilst it predicted most as "OTHER", it picked from a range of different
+classes.
+It wasn't very good of course. It mostly just gave one a probability between 0.99 and 1 and the rest had
+effectively 0.
+
+I realised I had forgot to change the number of nodes after I changed the dimension. Also because I was
+flattening the array, I should have been using 3*X*Y nodes in my first layer, not X*Y.
+I changed the number of nodes to 15552 in the first hidden layer, and decided to add one with sqrt(15552)
+nodes afterwards.This took half an hour to run and made it predict every image the exact same, I decided
+I'd just go back to a single layer.
+
+Running with a single layer with 15552 nodes, I managed to get my first realistic looking predictions.
+This still gave one class a probability of 0.99 to 1 and the rest something similar to 10^-135.
+Validation Log Loss: 20.5789132072
+not exactly ideal. I tried adding another layer of size 8. After 2 hours it still hadn't returned a
+solution, and I had to stop it.
+
+I decided I'd try an MLP with more layers but significantly less nodes. I tried using three, one with
+ 96 nodes, one with 54 nodes, and one with 8 nodes. This just went back to predicting everything the same.
+
+I'd had more success with one layer, I decided to go back to one layer but decrease the learning rate
+ to 1/10th of what it was before.
+This still gave one class a probability of 1 and the rest 0, but now the log loss was 6.91470139969,
+a big improvement from 20.
+I now tried increasing the default alpha from 0.0001 to 0.001, I halved the learning rate again and
+ran it for 300 iterations instead of 200.
+
+
+
+
+
+
+At this point I decided this was probably the best performance it was possible to get using such a basic approach, so I decided I'd submit this as my class 3 prediction and move on to more advanced techniques.
+
+_______________________________________________________________________________
+I didn't really have any understanding of CNN's so I decided to first do a bit of research on them
+From my understanding:
+  Convolution layers were the main building block of the CNN, they learnt filters to pick up on certain features in the images, outputting feature maps
+  Pooling layers were then used to essentially reduce the complexicity of these feature maps, whilst keeping the valuable data in them.
+  The fully connected layers were then used to actually take these features and give us some sort of classification
+
+
+firstcnn.py:
+  I implemented a very basic CNN at first. I wasn't too worried about performance, I just wanted to get a working basic CNN.
+  I used two Convolution2D layers, one with an output size of 32 and one with an output size of 64, both using Relu activation and a pooling layer afterwards. I had a dense layer with an output size of 8, one for each fish class
+  This wasn't very successful, after just 2 Epochs the loss stayed stable at exactly 5.8892 (this varied because I used a random sample, but it always converged on the second epoch). The total log loss on my training data was: 10.3881425004
+  I tried adding another dense layer with an output size of 64 in front of my firest dense layer, this didn't really do anything.
+
+secondcnn.py:
+  I was curious to see what would happen if I just added more Convolution layers. So I doubled the amount of
+   Convolution2D layers before the pooling layer.
+  It slightly increased the amount of time my program took to run, and annoyingly it still
+  converged after the second epoch. Performance seemed mildly better, hovereing around 3.7
+  to 4.5 loss per epoch. I slightly decreased my total log loss to around
+  6 to 8.
+
+thirdcnn.py:
+  I learnt about dropout layers and decided to try adding them after my dense layers to see if this would
+  stop my CNN converging so quickly. Instead of converging on the second epoch, it now just displayed NaN.
+  I tried just having one dropout layer. The general performance of my CNN became slightly worse, but now
+  it stopped converging so quickly. I was only running for 4 epochs at this stage, I tried running for 10
+   now I knew it wouldn't converge instantly.
+  Interestingly enough, it was now becoming worse the longer I ran it for.
+  I tried adding two Convolution2D layers with an output size of 128. This massively increased the runtime,
+  but instantly decreased the loss per epoch from around 5.5 to 3 at the start, and after about 5 epochs it
+  converged at around 2.1 loss per epoch.
+  My validation log loss for this was  4.07944154739, a big improvement on my second CNN. Another promising
+  sign was performance varied less on successive runs, meaning the random choice of training images didn't effect it as much.
+
+fourthcnn.py:
+  I tried adding a BatchNormalization layer to the beginning of my CNN. This was suppose to keep mean activation
+  close to 0 and the activation standard deviation close to 1. This immediately dropped the loss to 1.8 in the
+   first epoch, and by
+  the 10th i was getting around 1.31. The total loss on my validation set went down to 1.19, so I was fina
+  lly getting something closer to an actual result. The variance on performance based on the training dat
+  a also seemed to decrease significantly.
+
+  Unfortunately however, when I looked at the outputted probabilities, I saw that it was nearly
+  always giving ALB a > 0.6 probability. I was using a sigmoid layer to generate these; I decided I'd try softmax instead.
+  I was a little worried about overfitting here, the loss seemed to decrease much more rapidly.
+  I got a Validation Log Loss of 1.07881768947, which seemed promising, but I couldn't help but
+  think it was probably too good for such a basic model.
+  My model still nearly always gave ALB a > 0.3 probability.
+
+  I tried removing half of my Convolution2D layers, thinking it would prehaps make the loss decrease m
+  ore slowly. It did the opposite, it decreased much more quickly and begun overfitting.
+  I then tried adding another dropout layer, this time between the second and third Convolution2D layer.
+  I also added a tiny amount of noise in the form (epsilon=0.002) to my BatchNormalization layer.
+  This helped a bit, but I was still sure I was somehow overfitting. I added a GaussianNoise layer with
+  an SD of 1.

@@ -1,0 +1,123 @@
+HOG:
+  Histogram of oriented gradients seemed like it might be useful. My understanding was that it essentially
+  tries to calculate the direction and magnitude of gradient changes in the images.
+
+  I thought this would be a fairly useful approach, the shape of fish doesn't change much and this would help
+  my model more clearly recognise the different features that different fish have.
+
+  On the other hand, in some of the pictures I noticed that the fish partially or fully 'blends' into the background
+  of the image. In this case, surely the gradient would have a very mild change.
+  I wondered if this would cause incorrect classification or confuse the model. It seemed to me that
+  HOG would be most effective when we could clearly see the difference between the background and the object
+  but this definitely isn't the case in lots of these fish photos.
+
+
+  I also had to make the images greyscale as OpenCV HOG failed to work, so I had to use the greyscale only skimage version.
+
+  Basic HOG: 0.627144748019
+
+  This was very clearly overfitting the data.
+
+  HOG works by dividing the image into KxK cells. This is initially set to 8x8. I wondered if this was too big given that fish take up a tiny amount of the picture most of the time
+  so i decided I'd change this to 4x4 and see what happened.
+
+  This produced an even lower log loss of 0.523105694145. I decided I would output a class prediction instead and see how accurate these were.
+  To my surprise these seemed fairly good. I suspected therefore that the training images were very similar, and this was doing a good job of picking out the similar images.
+  The only way to confirm this was to submit a prediction to kaggle. Unfortunately I couldn't do this for all models due to the daily submission limit. I decided I'd just submit this one to see what was going wrong with my predictions.
+  To my surprise it got a log loss of 1.4 when submitted to kaggle. Not amazing, but better than I thought it would do.
+
+
+  I tried reverting the cell size back to 8x8 and I decreased the size of blocks per cell (used to normalize the image) from 3x3 to 2x2. This still lead to massive overfitting to the training set.
+  I tried increasing alpha to 0.01 and decreased the training rate; this helped but it was still getting a log loss of around 0.55.
+  I decided I would try to apply some geometric transformations to my images for another one of my feature extraction techniques, and then run HOG through this afterwards and see what happened.
+
+_____________________________________________________
+
+
+  Given how much my MLP using HOG was overfitting the data, I decided it would be a good idea to
+   transform the data using geometric transformations.
+  I experimented with different geometric transformations in OpenCV. I quickly realised
+  that one of the main issues was making sure I didn't accidentally cut out the fish from the image.
+
+  I decided for the first geometric transformation I would use a perspective
+  transformation to slightly alter the shape of the fish. (ML T1 PICTURES)
+
+  I started by doing a fairly small perspective shift where I would select the
+  four corners and move them slightly by 1 or 2 pixels.
+  As I couldn't get any reasonable performance using raw data and the MLP, I decided
+  I would apply HOG to the images the transformation.
+
+  The first time I did this I got a validation log loss of 1.16702015498. As I was
+  overfitting the data so much before using just HOG, this seemed like it was taking
+  me in the right direction.
+  Of course, it was hard to tell for me when a model was getting more accurate. Whilst
+   I was using cross validation and looking at both the log loss and the confusion matrices, given the apparent difference between kaggles test data
+  and the training data, it wasn't certain if a model would perform better or worse until
+   I submitted it, and I could only submit a few models a day.
+
+  I decided I would try to increase the amount I shifted the perspective, from 2 pixels to
+   5. This ended up making my predictions worse; the log loss became 1.82956938035
+  and looking at the confusion matrix generated I could see it was predicting ALB far too
+  frequently.
+
+
+  I went back to my original values for the transformation, and added some images in with a
+   second transformation, which was the same but I rotated the images upside down first.
+  This got a log loss of 1.3
+
+
+  I decided to try a different approach. I would use the more extreme transformation for
+  transformation 1, I would keep transformation 2 the same, and I would only apply
+  these to half the training data. I would then put in 66% of the original images,
+  giving my final training data a split of
+  40% normal images
+  30% transformation 1
+  30% transformation 2
+
+  This got about the same results as it did before. I decided I would try to use
+   different images for the two transformations, as I hoped this would lead to a
+   wider variety of images in the set.
+  This got a  validation Log Loss of 0.831112022087. My model was clearly overfitting again.
+
+
+
+
+
+
+
+
+_________________________________________
+
+For my last feature engineering technique I decided I wanted to use some form of image thresholding.
+
+To start with I tried just used basic binary thresholding in opencv, however this didn't produce any
+ usable results.
+ I then tried using gaussian adaptive thresholding, this seemed to give a better representation of the
+ image.
+However, it was still sometimes the case that the outline of the fish wasn't defined properly, or
+the thresholding broke up the outline of the fish.
+
+Parameters on threshold mattered a lot, changing from (9,2) to (11,4) was enough to make it instantly
+converge and get every prediction wrong.
+
+I tried adding blur, however this completely ruined predictions and made it predict everything
+with "OTHER"
+
+I was only using a small section of training data, I decided to see what would happen
+ if I let it run on a larger subset. I also increased the image size by 25% which I
+ thought would make a big difference.
+
+When I scaled up the image, I forgot to increase the number of nodes. Trying again
+withn nodes increased I got:
+
+
+
+
+LOSSES: 21.5366950859   (21,7)
+        23.7246124184   (7,3)
+        6.39192721626   (9,4)
+        7.18366577749   (9,4), average mean
+        7.88775931142   (9,11)
+
+        4.80448748133   (9,4), more data
+        4.969           (9,4), larger & more data
